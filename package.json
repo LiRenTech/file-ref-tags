@@ -31,6 +31,11 @@
         "command": "file-ref-tags.addGlobalUniqueSnippet",
         "title": "添加当前选中的全局唯一片段到面板",
         "category": "FileRefTags"
+      },
+      {
+        "command": "file-ref-tags.addComment",
+        "title": "添加用户注释到面板",
+        "category": "FileRefTags"
       }
     ],
     "menus": {
@@ -53,6 +58,10 @@
         {
           "command": "file-ref-tags.addGlobalUniqueSnippet",
           "group": "file-ref-tags@3"
+        },
+        {
+          "command": "file-ref-tags.addComment",
+          "group": "file-ref-tags@4"
         }
       ]
     },

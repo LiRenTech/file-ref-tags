@@ -353,7 +353,6 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
             margin: 0;
         }
         .reference-item {
-            background-color: #252526;
             border: 1px solid #3e3e42;
             border-radius: 4px;
             padding: 6px 10px;
@@ -365,6 +364,18 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
             justify-content: space-between;
             align-items: center;
             position: relative;
+        }
+        .reference-item[data-type="file"] {
+            background-color: rgba(14, 99, 156, 0.15);
+        }
+        .reference-item[data-type="file-snippet"] {
+            background-color: rgba(180, 40, 80, 0.15);
+        }
+        .reference-item[data-type="global-snippet"] {
+            background-color: rgba(74, 22, 140, 0.15);
+        }
+        .reference-item[data-type="comment"] {
+            background-color: rgba(0, 125, 74, 0.15);
         }
         .reference-item:hover {
             background-color: #2a2d2e;
@@ -672,6 +683,7 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
                 li.className = 'reference-item';
                 li.draggable = true;
                 li.dataset.id = reference.id;
+                li.dataset.type = reference.type;
 
                 // 设置拖拽事件
                 li.addEventListener('dragstart', handleDragStart);
@@ -953,6 +965,35 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(addGlobalUniqueSnippetDisposable);
+
+	// 注册添加用户注释到面板的命令
+	const addCommentDisposable = vscode.commands.registerCommand('file-ref-tags.addComment', async () => {
+		// 显示输入框，让用户输入注释
+		const comment = await vscode.window.showInputBox({
+			prompt: '请输入注释内容',
+			placeHolder: '例如：重要的API函数',
+			validateInput: (value) => {
+				if (!value || value.trim().length === 0) {
+					return '注释内容不能为空';
+				}
+				return null;
+			}
+		});
+
+		if (comment) {
+			// 创建引用项
+			dataManager.addReference({
+				type: 'comment',
+				title: comment.trim()
+			});
+
+			// 通知webview更新
+			webviewViewProvider.notifyUpdate();
+			vscode.window.showInformationMessage('已添加用户注释到面板');
+		}
+	});
+
+	context.subscriptions.push(addCommentDisposable);
 }
 
 // This method is called when your extension is deactivated
