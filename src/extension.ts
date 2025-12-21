@@ -272,6 +272,8 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 								await vscode.window.showTextDocument(matchFile, { selection: range });
 								// 确保选中的内容可见
 								await textEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+							} else if (matchCount === 0) {
+								vscode.window.showWarningMessage('未找到匹配的代码片段');
 							} else {
 								vscode.window.showWarningMessage('代码片段已不是全局唯一');
 							}
