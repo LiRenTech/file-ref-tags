@@ -201,8 +201,12 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 						const text = doc.getText();
 						const index = text.indexOf(reference.snippet);
 						if (index !== -1) {
-							const position = doc.positionAt(index);
-							await vscode.window.showTextDocument(uri, { selection: new vscode.Range(position, position) });
+							const startPosition = doc.positionAt(index);
+							const endPosition = doc.positionAt(index + reference.snippet.length);
+							const range = new vscode.Range(startPosition, endPosition);
+							await vscode.window.showTextDocument(uri, { selection: range });
+							// 确保选中的内容可见
+							await textEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 						} else {
 							vscode.window.showWarningMessage('代码片段已不存在于文件中');
 						}
@@ -220,7 +224,8 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 							
 							let matchCount = 0;
 							let matchFile: vscode.Uri | undefined;
-							let matchPosition: vscode.Position | undefined;
+							let matchStartPosition: vscode.Position | undefined;
+							let matchEndPosition: vscode.Position | undefined;
 							
 							// 遍历文件，查找包含代码片段的文件
 							for (const file of files) {
@@ -231,7 +236,8 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 									if (index !== -1) {
 										matchCount++;
 										matchFile = file;
-										matchPosition = doc.positionAt(index);
+										matchStartPosition = doc.positionAt(index);
+										matchEndPosition = doc.positionAt(index + reference.snippet.length);
 										// 如果超过1个匹配，就可以提前结束
 										if (matchCount > 1) {
 											break;
@@ -246,8 +252,12 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 							
 							console.log('匹配数量:', matchCount);
 							
-							if (matchCount === 1 && matchFile && matchPosition) {
-								await vscode.window.showTextDocument(matchFile, { selection: new vscode.Range(matchPosition, matchPosition) });
+							if (matchCount === 1 && matchFile && matchStartPosition && matchEndPosition) {
+								const textEditor = await vscode.window.showTextDocument(matchFile);
+								const range = new vscode.Range(matchStartPosition, matchEndPosition);
+								await vscode.window.showTextDocument(matchFile, { selection: range });
+								// 确保选中的内容可见
+								await textEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 							} else {
 								vscode.window.showWarningMessage('代码片段已不是全局唯一');
 							}
