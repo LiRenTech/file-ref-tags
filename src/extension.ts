@@ -95,6 +95,11 @@ class ReferenceDataManager {
 		this.references = this.references.filter(r => r.id !== id);
 		this.saveReferences();
 	}
+
+	// 获取存储路径
+	getStoragePath(): string {
+		return this.storagePath;
+	}
 }
 
 // Webview视图提供器
@@ -140,6 +145,9 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 						return;
 					case 'jumpToReference':
 						this._jumpToReference(message.id);
+						return;
+					case 'showStorageLocation':
+						this._showStorageLocation();
 						return;
 				}
 			},
@@ -264,6 +272,28 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 		this._sendReferences();
 	}
 
+	// 显示存储位置
+	private async _showStorageLocation(): Promise<void> {
+		try {
+			// 假设dataManager有一个getStoragePath方法来获取存储路径
+			// 我们需要修改ReferenceDataManager类，添加getStoragePath方法
+			if ('getStoragePath' in this._dataManager) {
+				const storagePath = (this._dataManager as any).getStoragePath();
+				const uri = vscode.Uri.file(storagePath);
+				
+				// 显示文件在资源管理器中
+				await vscode.commands.executeCommand('revealFileInOS', uri);
+				// 同时在编辑器中打开文件
+				await vscode.window.showTextDocument(uri);
+			} else {
+				vscode.window.showErrorMessage('无法获取存储路径');
+			}
+		} catch (error) {
+			console.error('显示存储位置失败:', error);
+			vscode.window.showErrorMessage('显示存储位置失败');
+		}
+	}
+
 	// 生成webview HTML
 	private _getHtmlForWebview(webview: vscode.Webview): string {
 		return `<!DOCTYPE html>
@@ -367,11 +397,31 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
             color: #ff6b6b;
             background-color: rgba(255, 107, 107, 0.1);
         }
+        .actions-bar {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            background-color: #0e639c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .action-btn:hover {
+            background-color: #1177bb;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>File References</h1>
+        <div class="actions-bar">
+            <button id="show-storage-btn" class="action-btn">Show Storage Location</button>
+        </div>
         <div id="empty-state" class="empty-state">
             <p>No references yet. Add your first reference!</p>
         </div>
@@ -385,6 +435,14 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 
         // 初始化
         vscode.postMessage({ command: 'getReferences' });
+
+        // 添加显示存储位置按钮事件
+        const showStorageBtn = document.getElementById('show-storage-btn');
+        if (showStorageBtn) {
+            showStorageBtn.addEventListener('click', () => {
+                vscode.postMessage({ command: 'showStorageLocation' });
+            });
+        }
 
         // 处理消息
         window.addEventListener('message', event => {
