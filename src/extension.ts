@@ -767,6 +767,25 @@ export function activate(context: vscode.ExtensionContext) {
 		return undefined;
 	};
 
+	// 辅助函数：检查代码片段在当前文件中的唯一性
+	const checkSnippetUniquenessInFile = (document: vscode.TextDocument, snippet: string): { isUnique: boolean; count: number } => {
+		const text = document.getText();
+		// 使用 indexOf 查找所有匹配的片段（不重叠）
+		let count = 0;
+		let index = 0;
+		while (index !== -1) {
+			index = text.indexOf(snippet, index);
+			if (index !== -1) {
+				count++;
+				index += snippet.length; // 移动到下一个可能的位置（不重叠）
+			}
+		}
+		return {
+			isUnique: count === 1,
+			count: count
+		};
+	};
+
 	// 注册复制链接（仅代码片段）的命令
 	const copyLinkSnippetOnlyDisposable = vscode.commands.registerCommand('file-ref-tags.copyLinkSnippetOnly', async () => {
 		const editor = vscode.window.activeTextEditor;
@@ -781,7 +800,15 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const snippet = editor.document.getText(selection);
+		const document = editor.document;
+		const snippet = document.getText(selection);
+		
+		// 检查代码片段在当前文件中的唯一性
+		const uniqueness = checkSnippetUniquenessInFile(document, snippet);
+		if (!uniqueness.isUnique) {
+			vscode.window.showWarningMessage(`警告：当前文件中存在 ${uniqueness.count} 个相同的代码片段，链接可能无法准确定位`);
+		}
+
 		const link = generateVscodeLink(undefined, snippet);
 
 		await vscode.env.clipboard.writeText(link);
@@ -827,6 +854,13 @@ export function activate(context: vscode.ExtensionContext) {
 		const filePath = document.uri.fsPath;
 		const fileName = path.basename(filePath);
 		const snippet = document.getText(selection);
+
+		// 检查代码片段在当前文件中的唯一性
+		const uniqueness = checkSnippetUniquenessInFile(document, snippet);
+		if (!uniqueness.isUnique) {
+			vscode.window.showWarningMessage(`警告：当前文件中存在 ${uniqueness.count} 个相同的代码片段，链接可能无法准确定位`);
+		}
+
 		const link = generateVscodeLink(fileName, snippet);
 
 		await vscode.env.clipboard.writeText(link);
@@ -855,6 +889,13 @@ export function activate(context: vscode.ExtensionContext) {
 		const fileName = path.basename(filePath);
 		const parentDirAndFileName = `${dirName}/${fileName}`;
 		const snippet = document.getText(selection);
+
+		// 检查代码片段在当前文件中的唯一性
+		const uniqueness = checkSnippetUniquenessInFile(document, snippet);
+		if (!uniqueness.isUnique) {
+			vscode.window.showWarningMessage(`警告：当前文件中存在 ${uniqueness.count} 个相同的代码片段，链接可能无法准确定位`);
+		}
+
 		const link = generateVscodeLink(parentDirAndFileName, snippet);
 
 		await vscode.env.clipboard.writeText(link);
@@ -887,6 +928,13 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		const snippet = document.getText(selection);
+
+		// 检查代码片段在当前文件中的唯一性
+		const uniqueness = checkSnippetUniquenessInFile(document, snippet);
+		if (!uniqueness.isUnique) {
+			vscode.window.showWarningMessage(`警告：当前文件中存在 ${uniqueness.count} 个相同的代码片段，链接可能无法准确定位`);
+		}
+
 		// 将路径分隔符统一为正斜杠（URL友好）
 		const normalizedPath = workspaceRelativePath.replace(/\\/g, '/');
 		const link = generateVscodeLink(normalizedPath, snippet);
