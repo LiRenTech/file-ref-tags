@@ -166,6 +166,25 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 				this._sendReferences();
 			}
 		});
+
+		// 监听主题变化
+		// 注意：VS Code的CSS变量会自动更新，但为了确保兼容性，我们在主题变化时重新设置HTML
+		const themeChangeDisposable = vscode.window.onDidChangeActiveColorTheme(() => {
+			if (this._webviewView?.visible) {
+				// 重新设置HTML内容以应用新的主题变量
+				// CSS变量会自动更新，但重新设置HTML可以确保所有样式都正确应用
+				this._webviewView.webview.html = this._getHtmlForWebview(this._webviewView.webview);
+				// 重新发送引用数据以恢复状态
+				setTimeout(() => {
+					this._sendReferences();
+				}, 50);
+			}
+		});
+
+		// 将主题变化监听器添加到webview的dispose中
+		webviewView.onDidDispose(() => {
+			themeChangeDisposable.dispose();
+		});
 	}
 
 	// 发送引用数据到webview
@@ -225,12 +244,12 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 							// 先获取当前工作区的所有文件
 							const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 10000);
 							console.log('搜索文件数量:', files.length);
-							
+
 							let matchCount = 0;
 							let matchFile: vscode.Uri | undefined;
 							let matchStartPosition: vscode.Position | undefined;
 							let matchEndPosition: vscode.Position | undefined;
-							
+
 							// 遍历文件，查找包含代码片段的文件
 							for (const file of files) {
 								try {
@@ -253,9 +272,9 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 									continue;
 								}
 							}
-							
+
 							console.log('匹配数量:', matchCount);
-							
+
 							if (matchCount === 1 && matchFile && matchStartPosition && matchEndPosition) {
 								const textEditor = await vscode.window.showTextDocument(matchFile);
 								const range = new vscode.Range(matchStartPosition, matchEndPosition);
@@ -296,7 +315,7 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 			if ('getStoragePath' in this._dataManager) {
 				const storagePath = (this._dataManager as any).getStoragePath();
 				const uri = vscode.Uri.file(storagePath);
-				
+
 				// 显示文件在资源管理器中
 				await vscode.commands.executeCommand('revealFileInOS', uri);
 				// 同时在编辑器中打开文件
@@ -372,7 +391,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const jumpToFile = async (filePath: string) => {
 		try {
 			let fileUri: vscode.Uri;
-			
+
 			// 检查是否为绝对路径
 			if (path.isAbsolute(filePath)) {
 				fileUri = vscode.Uri.file(filePath);
@@ -383,7 +402,7 @@ export function activate(context: vscode.ExtensionContext) {
 					vscode.window.showErrorMessage('未打开工作区，无法使用相对路径或仅文件名');
 					return;
 				}
-				
+
 				// 查找匹配的文件
 				const matches: vscode.Uri[] = [];
 				for (const folder of workspaceFolders) {
@@ -391,17 +410,17 @@ export function activate(context: vscode.ExtensionContext) {
 					const files = await vscode.workspace.findFiles(`**/${filePath}`, '**/node_modules/**');
 					matches.push(...files);
 				}
-				
+
 				if (matches.length === 0) {
 					vscode.window.showErrorMessage(`未找到文件：${filePath}`);
 					return;
 				} else if (matches.length > 1) {
 					vscode.window.showWarningMessage(`找到多个匹配文件，将打开第一个：${filePath}`);
 				}
-				
+
 				fileUri = matches[0];
 			}
-			
+
 			await vscode.window.showTextDocument(fileUri);
 		} catch (error) {
 			console.error('Failed to jump to file:', error);
@@ -413,7 +432,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const jumpToFileAndSnippet = async (filePath: string, snippet: string) => {
 		try {
 			let fileUri: vscode.Uri;
-			
+
 			// 检查是否为绝对路径
 			if (path.isAbsolute(filePath)) {
 				fileUri = vscode.Uri.file(filePath);
@@ -424,7 +443,7 @@ export function activate(context: vscode.ExtensionContext) {
 					vscode.window.showErrorMessage('未打开工作区，无法使用相对路径或仅文件名');
 					return;
 				}
-				
+
 				// 查找匹配的文件，并结合代码片段筛选
 				const matches: vscode.Uri[] = [];
 				for (const folder of workspaceFolders) {
@@ -432,19 +451,19 @@ export function activate(context: vscode.ExtensionContext) {
 					const files = await vscode.workspace.findFiles(`**/${filePath}`, '**/node_modules/**');
 					matches.push(...files);
 				}
-				
+
 				if (matches.length === 0) {
 					vscode.window.showErrorMessage(`未找到文件：${filePath}`);
 					return;
 				}
-				
+
 				// 如果有多个匹配文件，结合代码片段筛选
 				let targetFileUri: vscode.Uri | undefined;
 				if (matches.length === 1) {
 					targetFileUri = matches[0];
 				} else {
 					vscode.window.showInformationMessage(`找到${matches.length}个匹配文件，正在结合代码片段筛选...`);
-					
+
 					// 遍历每个匹配文件，查找包含代码片段的文件
 					for (const match of matches) {
 						try {
@@ -459,18 +478,18 @@ export function activate(context: vscode.ExtensionContext) {
 							continue;
 						}
 					}
-					
+
 					if (!targetFileUri) {
 						vscode.window.showErrorMessage(`找到${matches.length}个匹配文件，但没有包含指定代码片段的文件：${filePath}`);
 						return;
 					}
-					
+
 					vscode.window.showInformationMessage(`已筛选出包含代码片段的文件：${path.basename(targetFileUri.fsPath)}`);
 				}
-				
+
 				fileUri = targetFileUri!;
 			}
-			
+
 			const textEditor = await vscode.window.showTextDocument(fileUri);
 			const doc = textEditor.document;
 			// 搜索代码片段
@@ -498,12 +517,12 @@ export function activate(context: vscode.ExtensionContext) {
 			// 先获取当前工作区的所有文件
 			const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 10000);
 			console.log('搜索文件数量:', files.length);
-			
+
 			let matchCount = 0;
 			let matchFile: vscode.Uri | undefined;
 			let matchStartPosition: vscode.Position | undefined;
 			let matchEndPosition: vscode.Position | undefined;
-			
+
 			// 遍历文件，查找包含代码片段的文件
 			for (const file of files) {
 				try {
@@ -526,9 +545,9 @@ export function activate(context: vscode.ExtensionContext) {
 					continue;
 				}
 			}
-			
+
 			console.log('匹配数量:', matchCount);
-			
+
 			if (matchCount === 1 && matchFile && matchStartPosition && matchEndPosition) {
 				const textEditor = await vscode.window.showTextDocument(matchFile);
 				const range = new vscode.Range(matchStartPosition, matchEndPosition);
@@ -649,10 +668,10 @@ export function activate(context: vscode.ExtensionContext) {
 			// 先获取当前工作区的所有文件
 			const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 10000);
 			console.log('搜索文件数量:', files.length);
-			
+
 			let matchCount = 0;
 			let matchFile: vscode.Uri | undefined;
-			
+
 			// 遍历文件，查找包含代码片段的文件
 			for (const file of files) {
 				try {
@@ -672,9 +691,9 @@ export function activate(context: vscode.ExtensionContext) {
 					continue;
 				}
 			}
-			
+
 			console.log('匹配数量:', matchCount);
-			
+
 			if (matchCount !== 1) {
 				vscode.window.showErrorMessage('选中的代码片段不是全局唯一的');
 				return;
@@ -732,16 +751,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// 辅助函数：生成 vscode:// 链接
 	const generateVscodeLink = (filePath?: string, snippet?: string): string => {
-		const baseUrl = 'vscode://lirentech.file-ref-tags';
+		const scheme = vscode.env.uriScheme || 'vscode';
+		const baseUrl = `${scheme}://lirentech.file-ref-tags`;
 		const params = new URLSearchParams();
-		
+
 		if (filePath) {
 			params.append('filePath', filePath);
 		}
 		if (snippet) {
 			params.append('snippet', snippet);
 		}
-		
+
 		const queryString = params.toString();
 		return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 	};
@@ -752,7 +772,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (!workspaceFolders || workspaceFolders.length === 0) {
 			return undefined;
 		}
-		
+
 		// 查找匹配的工作区文件夹
 		for (const folder of workspaceFolders) {
 			const folderPath = folder.uri.fsPath;
@@ -762,8 +782,27 @@ export function activate(context: vscode.ExtensionContext) {
 				return relativePath;
 			}
 		}
-		
+
 		return undefined;
+	};
+
+	// 辅助函数：检查代码片段在当前文件中的唯一性
+	const checkSnippetUniquenessInFile = (document: vscode.TextDocument, snippet: string): { isUnique: boolean; count: number } => {
+		const text = document.getText();
+		// 使用 indexOf 查找所有匹配的片段（不重叠）
+		let count = 0;
+		let index = 0;
+		while (index !== -1) {
+			index = text.indexOf(snippet, index);
+			if (index !== -1) {
+				count++;
+				index += snippet.length; // 移动到下一个可能的位置（不重叠）
+			}
+		}
+		return {
+			isUnique: count === 1,
+			count: count
+		};
 	};
 
 	// 注册复制链接（仅代码片段）的命令
@@ -780,9 +819,17 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const snippet = editor.document.getText(selection);
-		const link = generateVscodeLink(undefined, snippet);
+		const document = editor.document;
+		const snippet = document.getText(selection);
 		
+		// 检查代码片段在当前文件中的唯一性
+		const uniqueness = checkSnippetUniquenessInFile(document, snippet);
+		if (!uniqueness.isUnique) {
+			vscode.window.showWarningMessage(`警告：当前文件中存在 ${uniqueness.count} 个相同的代码片段，链接可能无法准确定位`);
+		}
+
+		const link = generateVscodeLink(undefined, snippet);
+
 		await vscode.env.clipboard.writeText(link);
 		vscode.window.showInformationMessage('链接已复制到剪贴板');
 	});
@@ -801,7 +848,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const filePath = document.uri.fsPath;
 		const fileName = path.basename(filePath);
 		const link = generateVscodeLink(fileName, undefined);
-		
+
 		await vscode.env.clipboard.writeText(link);
 		vscode.window.showInformationMessage('链接已复制到剪贴板');
 	});
@@ -826,8 +873,15 @@ export function activate(context: vscode.ExtensionContext) {
 		const filePath = document.uri.fsPath;
 		const fileName = path.basename(filePath);
 		const snippet = document.getText(selection);
+
+		// 检查代码片段在当前文件中的唯一性
+		const uniqueness = checkSnippetUniquenessInFile(document, snippet);
+		if (!uniqueness.isUnique) {
+			vscode.window.showWarningMessage(`警告：当前文件中存在 ${uniqueness.count} 个相同的代码片段，链接可能无法准确定位`);
+		}
+
 		const link = generateVscodeLink(fileName, snippet);
-		
+
 		await vscode.env.clipboard.writeText(link);
 		vscode.window.showInformationMessage('链接已复制到剪贴板');
 	});
@@ -854,8 +908,15 @@ export function activate(context: vscode.ExtensionContext) {
 		const fileName = path.basename(filePath);
 		const parentDirAndFileName = `${dirName}/${fileName}`;
 		const snippet = document.getText(selection);
+
+		// 检查代码片段在当前文件中的唯一性
+		const uniqueness = checkSnippetUniquenessInFile(document, snippet);
+		if (!uniqueness.isUnique) {
+			vscode.window.showWarningMessage(`警告：当前文件中存在 ${uniqueness.count} 个相同的代码片段，链接可能无法准确定位`);
+		}
+
 		const link = generateVscodeLink(parentDirAndFileName, snippet);
-		
+
 		await vscode.env.clipboard.writeText(link);
 		vscode.window.showInformationMessage('链接已复制到剪贴板');
 	});
@@ -879,17 +940,24 @@ export function activate(context: vscode.ExtensionContext) {
 		const document = editor.document;
 		const filePath = document.uri.fsPath;
 		const workspaceRelativePath = getWorkspaceRelativePath(filePath);
-		
+
 		if (!workspaceRelativePath) {
 			vscode.window.showErrorMessage('无法获取项目级路径，请确保文件在工作区内');
 			return;
 		}
 
 		const snippet = document.getText(selection);
+
+		// 检查代码片段在当前文件中的唯一性
+		const uniqueness = checkSnippetUniquenessInFile(document, snippet);
+		if (!uniqueness.isUnique) {
+			vscode.window.showWarningMessage(`警告：当前文件中存在 ${uniqueness.count} 个相同的代码片段，链接可能无法准确定位`);
+		}
+
 		// 将路径分隔符统一为正斜杠（URL友好）
 		const normalizedPath = workspaceRelativePath.replace(/\\/g, '/');
 		const link = generateVscodeLink(normalizedPath, snippet);
-		
+
 		await vscode.env.clipboard.writeText(link);
 		vscode.window.showInformationMessage('链接已复制到剪贴板');
 	});
@@ -898,4 +966,4 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }

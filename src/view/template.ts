@@ -5,12 +5,13 @@ export const TEMPLATE = `<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Ref Tags</title>
     <style>
+        /* VS Code会自动在webview中注入CSS变量，我们直接使用它们，并提供默认值作为后备 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
+            background-color: var(--vscode-editor-background, #1e1e1e);
+            color: var(--vscode-editor-foreground, #d4d4d4);
             font-size: 11px;
             font-weight: 400;
         }
@@ -24,11 +25,12 @@ export const TEMPLATE = `<!DOCTYPE html>
             font-size: 12px;
             margin: 0 0 8px 0;
             font-weight: 400;
+            color: var(--vscode-editor-foreground, #d4d4d4);
         }
         .empty-state {
             text-align: center;
             padding: 32px 0;
-            color: #858585;
+            color: var(--vscode-descriptionForeground, #858585);
         }
         .references-list {
             list-style-type: none;
@@ -36,7 +38,7 @@ export const TEMPLATE = `<!DOCTYPE html>
             margin: 0;
         }
         .reference-item {
-            outline: 1px solid #3e3e42;
+            outline: 1px solid var(--vscode-panel-border, #3e3e42);
             padding: 0 4px;
             margin: 0;
             cursor: pointer;
@@ -47,6 +49,7 @@ export const TEMPLATE = `<!DOCTYPE html>
             align-items: center;
             position: relative;
             line-height: 22px;
+            background-color: var(--vscode-editor-background, #1e1e1e);
         }
         .reference-item[data-type="file"] {
             background-color: rgba(14, 99, 156, 0.15);
@@ -61,15 +64,15 @@ export const TEMPLATE = `<!DOCTYPE html>
             background-color: rgba(0, 125, 74, 0.15);
         }
         .reference-item:hover {
-            background-color: #2a2d2e;
-            border-color: #0e639c;
+            background-color: var(--vscode-list-hoverBackground, #2a2d2e) !important;
+            outline-color: var(--vscode-input-focusBorder, #0e639c);
         }
         .reference-item.dragging {
             opacity: 0.5;
-            border: 2px dashed #0e639c;
+            outline: 2px dashed var(--vscode-input-focusBorder, #0e639c);
         }
         .reference-item.drag-over {
-            border-top: 2px solid #0e639c;
+            border-top: 2px solid var(--vscode-input-focusBorder, #0e639c);
         }
         .reference-title {
             font-size: 11px;
@@ -79,9 +82,11 @@ export const TEMPLATE = `<!DOCTYPE html>
             overflow: hidden;
             text-overflow: ellipsis;
             flex: 1;
+            color: var(--vscode-editor-foreground, #d4d4d4);
         }
         .reference-item:hover .reference-title {
             margin-right: 50px;
+            color: var(--vscode-list-hoverForeground, #cccccc);
         }
         .reference-actions {
             position: absolute;
@@ -103,28 +108,28 @@ export const TEMPLATE = `<!DOCTYPE html>
         .edit-btn {
             background: none;
             border: none;
-            color: #858585;
+            color: var(--vscode-descriptionForeground, #858585);
             cursor: pointer;
             font-size: 12px;
             padding: 1px 5px;
             border-radius: 2px;
         }
         .edit-btn:hover {
-            color: #0e639c;
-            background-color: rgba(14, 99, 156, 0.1);
+            color: var(--vscode-textLink-foreground, #3794ff);
+            background-color: var(--vscode-list-hoverBackground, #2a2d2e);
         }
         .delete-btn {
             background: none;
             border: none;
-            color: #858585;
+            color: var(--vscode-descriptionForeground, #858585);
             cursor: pointer;
             font-size: 14px;
             padding: 1px 5px;
             border-radius: 2px;
         }
         .delete-btn:hover {
-            color: #ff6b6b;
-            background-color: rgba(255, 107, 107, 0.1);
+            color: var(--vscode-errorForeground, #f48771);
+            background-color: var(--vscode-list-hoverBackground, #2a2d2e);
         }
         /* 弹窗样式 */
         .modal {
@@ -138,14 +143,14 @@ export const TEMPLATE = `<!DOCTYPE html>
             background-color: rgba(0, 0, 0, 0.5);
         }
         .modal-content {
-            background-color: #252526;
+            background-color: var(--vscode-editor-background, #1e1e1e);
             margin: 15% auto;
             padding: 12px;
-            border: 1px solid #3e3e42;
+            border: 1px solid var(--vscode-panel-border, #3e3e42);
             border-radius: 4px;
             width: 220px;
             max-width: 90%;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.3));
         }
         .modal-header {
             display: flex;
@@ -157,17 +162,18 @@ export const TEMPLATE = `<!DOCTYPE html>
             font-size: 14px;
             font-weight: 500;
             margin: 0;
+            color: var(--vscode-editor-foreground, #d4d4d4);
         }
         .close-btn {
             background: none;
             border: none;
-            color: #858585;
+            color: var(--vscode-descriptionForeground, #858585);
             cursor: pointer;
             font-size: 16px;
             padding: 0;
         }
         .close-btn:hover {
-            color: #d4d4d4;
+            color: var(--vscode-editor-foreground, #d4d4d4);
         }
         .form-group {
             margin-bottom: 12px;
@@ -176,21 +182,21 @@ export const TEMPLATE = `<!DOCTYPE html>
             display: block;
             font-size: 12px;
             margin-bottom: 4px;
-            color: #858585;
+            color: var(--vscode-descriptionForeground, #858585);
         }
         .form-input {
             width: 100%;
             padding: 6px 8px;
-            border: 1px solid #3e3e42;
+            border: 1px solid var(--vscode-input-border, #3e3e42);
             border-radius: 3px;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
+            background-color: var(--vscode-input-background, #3c3c3c);
+            color: var(--vscode-input-foreground, #cccccc);
             font-size: 12px;
             box-sizing: border-box;
         }
         .form-input:focus {
             outline: none;
-            border-color: #0e639c;
+            border-color: var(--vscode-input-focusBorder, #0e639c);
         }
         .modal-footer {
             display: flex;
@@ -206,18 +212,18 @@ export const TEMPLATE = `<!DOCTYPE html>
             cursor: pointer;
         }
         .btn-primary {
-            background-color: #0e639c;
-            color: white;
+            background-color: var(--vscode-button-background, #0e639c);
+            color: var(--vscode-button-foreground, #ffffff);
         }
         .btn-primary:hover {
-            background-color: #1177bb;
+            background-color: var(--vscode-button-hoverBackground, #1177bb);
         }
         .btn-secondary {
-            background-color: #3e3e42;
-            color: #d4d4d4;
+            background-color: var(--vscode-button-secondaryBackground, #3e3e42);
+            color: var(--vscode-button-secondaryForeground, #cccccc);
         }
         .btn-secondary:hover {
-            background-color: #4e4e53;
+            background-color: var(--vscode-button-secondaryHoverBackground, #454545);
         }
         .actions-bar {
             margin-top: 8px;
@@ -225,8 +231,8 @@ export const TEMPLATE = `<!DOCTYPE html>
             gap: 4px;
         }
         .action-btn {
-            background-color: #0e639c;
-            color: white;
+            background-color: var(--vscode-button-background, #0e639c);
+            color: var(--vscode-button-foreground, #ffffff);
             border: none;
             padding: 4px 8px;
             font-size: 10px;
@@ -234,7 +240,7 @@ export const TEMPLATE = `<!DOCTYPE html>
             width: 100%;
         }
         .action-btn:hover {
-            background-color: #1177bb;
+            background-color: var(--vscode-button-hoverBackground, #1177bb);
         }
     </style>
 </head>

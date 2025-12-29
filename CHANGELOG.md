@@ -1,9 +1,33 @@
 # Change Log
 
-All notable changes to the "file-ref-tags" extension will be documented in this file.
+## v0.0.4
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+- 支持不同的类vscode编辑器中导出链接，例如trae
+- 支持白色主题
+- 支持vscode 1.101.2版本
 
-## [Unreleased]
+## v0.0.3
 
-- Initial release
+- 新增 5 个复制 vscode:// 协议链接的命令
+  - 复制链接（仅代码片段）
+  - 复制链接（仅文件名）
+  - 复制链接（文件名+代码片段）
+  - 复制链接（父级文件夹+文件名+代码片段）
+  - 复制链接（项目级路径+代码片段）
+- 为"复制链接（文件名+代码片段）"命令添加快捷键：`Cmd+Shift+Option+C` (Mac) / `Ctrl+Shift+Alt+C` (Windows/Linux)
+
+## v0.0.2
+
+- 添加通过 vscode:// 协议的外部 URL 支持
+- 支持文件路径的绝对路径、相对路径和仅文件名
+- 当多个文件匹配时添加代码片段筛选
+- 改进错误处理，提供详细的错误信息
+
+## v0.0.1
+
+- 初始版本
+- 支持添加文件、文件+片段、全局片段和注释
+- 支持拖拽排序和快速跳转
+- 支持编辑引用项标题
+- 支持不同类型引用项的颜色区分
+- 支持通过 vscode:// 协议进行外部 URL 跳转

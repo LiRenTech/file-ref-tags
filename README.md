@@ -208,34 +208,6 @@ Reference data is stored in the `references.json` file under VSCode extension's 
 - VSCode Version: ^1.107.0
 - Operating System: Supports Windows, macOS, and Linux
 
-## Changelog
-
-### v0.0.3
-
-- Add 5 new commands to copy vscode:// protocol links to clipboard
-  - Copy Link (Snippet Only)
-  - Copy Link (File Name Only)
-  - Copy Link (File Name + Snippet)
-  - Copy Link (Parent Directory + File Name + Snippet)
-  - Copy Link (Workspace Path + Snippet)
-- Add keyboard shortcut for "Copy Link (File Name + Snippet)": `Cmd+Shift+Option+C` (Mac) / `Ctrl+Shift+Alt+C` (Windows/Linux)
-
-### v0.0.2
-
-- Add external URL support via vscode:// protocol
-- Support absolute path, relative path, and file name only for file paths
-- Add code snippet filtering when multiple files match
-- Improve error handling with detailed error messages
-
-### v0.0.1
-
-- Initial version
-- Support adding files, file + snippet, global snippet, and comments
-- Support drag and drop sorting and quick jumping
-- Support editing reference item titles
-- Support color differentiation for different types of reference items
-- Support external URL jump via vscode:// protocol
-
 ## Feedback and Suggestions
 
 If you encounter any issues or have any suggestions during use, welcome to submit Issues or Pull Requests in the GitHub repository.
@@ -458,34 +430,6 @@ vscode://lirentech.file-ref-tags?filePath=src/extension.ts&snippet=// 注册处�
 
 - VSCode 版本：^1.107.0
 - 操作系统：支持 Windows、macOS 和 Linux
-
-## 更新日志
-
-### v0.0.3
-
-- 新增 5 个复制 vscode:// 协议链接的命令
-  - 复制链接（仅代码片段）
-  - 复制链接（仅文件名）
-  - 复制链接（文件名+代码片段）
-  - 复制链接（父级文件夹+文件名+代码片段）
-  - 复制链接（项目级路径+代码片段）
-- 为"复制链接（文件名+代码片段）"命令添加快捷键：`Cmd+Shift+Option+C` (Mac) / `Ctrl+Shift+Alt+C` (Windows/Linux)
-
-### v0.0.2
-
-- 添加通过 vscode:// 协议的外部 URL 支持
-- 支持文件路径的绝对路径、相对路径和仅文件名
-- 当多个文件匹配时添加代码片段筛选
-- 改进错误处理，提供详细的错误信息
-
-### v0.0.1
-
-- 初始版本
-- 支持添加文件、文件+片段、全局片段和注释
-- 支持拖拽排序和快速跳转
-- 支持编辑引用项标题
-- 支持不同类型引用项的颜色区分
-- 支持通过 vscode:// 协议进行外部 URL 跳转
 
 ## 反馈与建议
 
