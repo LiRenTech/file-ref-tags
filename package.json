@@ -10,7 +10,7 @@
     "url": "https://github.com/LiRenTech/file-ref-tags.git"
   },
   "engines": {
-    "vscode": "^1.101.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
     "Snippets",
@@ -175,7 +175,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.101.0",
+    "@types/vscode": "^1.85.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "typescript-eslint": "^8.48.1",
