@@ -367,8 +367,8 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			// 解码参数
-			const decodedFilePath = filePath ? decodeURIComponent(filePath) : undefined;
-			const decodedSnippet = snippet ? decodeURIComponent(snippet) : undefined;
+			const decodedFilePath = filePath ?? undefined;
+			const decodedSnippet = snippet ?? undefined;
 
 			// 根据参数组合决定跳转模式
 			if (decodedFilePath && decodedSnippet) {
