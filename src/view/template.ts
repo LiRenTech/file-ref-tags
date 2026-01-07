@@ -657,69 +657,81 @@ export const TEMPLATE = `<!DOCTYPE html>
 
             // 渲染分组
             groups.forEach(group => {
+                // 不管分组是否为空，都渲染出来
+                const groupLi = document.createElement('li');
+                groupLi.className = 'reference-group';
+                groupLi.dataset.id = group.id;
+
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'group-header expanded'; // 默认展开
+                groupHeader.onclick = toggleGroup.bind(null, group.id);
+
+                const groupTitle = document.createElement('div');
+                groupTitle.className = 'group-title';
+                
+                // 添加展开/折叠箭头
+                const expandIndicator = document.createElement('span');
+                expandIndicator.className = 'expand-indicator';
+                expandIndicator.textContent = '▶';
+                
+                const groupNameSpan = document.createElement('span');
+                groupNameSpan.textContent = group.name;
+
+                groupTitle.appendChild(expandIndicator);
+                groupTitle.appendChild(groupNameSpan);
+
+                const groupActions = document.createElement('div');
+                groupActions.className = 'group-actions';
+
+                const deleteGroupBtn = document.createElement('button');
+                deleteGroupBtn.className = 'delete-btn';
+                deleteGroupBtn.textContent = '×';
+                deleteGroupBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    if (confirm('确定要删除这个分组吗？分组内的引用项将变为未分组状态。')) {
+                        vscode.postMessage({ command: 'deleteGroup', id: group.id });
+                    }
+                };
+
+                groupActions.appendChild(deleteGroupBtn);
+                groupHeader.appendChild(groupTitle);
+                groupHeader.appendChild(groupActions);
+                groupLi.appendChild(groupHeader);
+
+                const groupContent = document.createElement('div');
+                groupContent.className = 'group-content';
+
+                const groupItemsUl = document.createElement('ul');
+                groupItemsUl.className = 'group-items';
+
+                // 如果分组有引用项，则渲染出来
                 if (groupedReferences[group.id] && groupedReferences[group.id].length > 0) {
-                    const groupLi = document.createElement('li');
-                    groupLi.className = 'reference-group';
-                    groupLi.dataset.id = group.id;
-
-                    const groupHeader = document.createElement('div');
-                    groupHeader.className = 'group-header expanded'; // 默认展开
-                    groupHeader.onclick = toggleGroup.bind(null, group.id);
-
-                    const groupTitle = document.createElement('div');
-                    groupTitle.className = 'group-title';
-                    
-                    // 添加展开/折叠箭头
-                    const expandIndicator = document.createElement('span');
-                    expandIndicator.className = 'expand-indicator';
-                    expandIndicator.textContent = '▶';
-                    
-                    const groupNameSpan = document.createElement('span');
-                    groupNameSpan.textContent = group.name;
-
-                    groupTitle.appendChild(expandIndicator);
-                    groupTitle.appendChild(groupNameSpan);
-
-                    const groupActions = document.createElement('div');
-                    groupActions.className = 'group-actions';
-
-                    const deleteGroupBtn = document.createElement('button');
-                    deleteGroupBtn.className = 'delete-btn';
-                    deleteGroupBtn.textContent = '×';
-                    deleteGroupBtn.onclick = function(e) {
-                        e.stopPropagation();
-                        if (confirm('确定要删除这个分组吗？分组内的引用项将变为未分组状态。')) {
-                            vscode.postMessage({ command: 'deleteGroup', id: group.id });
-                        }
-                    };
-
-                    groupActions.appendChild(deleteGroupBtn);
-                    groupHeader.appendChild(groupTitle);
-                    groupHeader.appendChild(groupActions);
-                    groupLi.appendChild(groupHeader);
-
-                    const groupContent = document.createElement('div');
-                    groupContent.className = 'group-content';
-
-                    const groupItemsUl = document.createElement('ul');
-                    groupItemsUl.className = 'group-items';
-
                     groupedReferences[group.id].forEach(reference => {
                         groupItemsUl.appendChild(createReferenceElement(reference));
                     });
+                } else {
+                    // 如果分组为空，显示提示信息
+                    const emptyItem = document.createElement('li');
+                    emptyItem.className = 'empty-group-item';
+                    emptyItem.style.padding = '8px';
+                    emptyItem.style.textAlign = 'center';
+                    emptyItem.style.color = 'var(--vscode-descriptionForeground, #858585)';
+                    emptyItem.style.fontSize = '11px';
+                    emptyItem.textContent = '此分组为空，拖拽引用项至此';
+                    groupItemsUl.appendChild(emptyItem);
+                }
 
-                    groupContent.appendChild(groupItemsUl);
-                    groupLi.appendChild(groupContent);
-                    list.appendChild(groupLi);
-                    
-                    // 设置初始显示状态
-                    if (!expandedGroups[group.id]) {
-                        groupContent.style.display = 'none';
-                        groupHeader.classList.remove('expanded');
-                    } else {
-                        groupContent.style.display = 'block';
-                        groupHeader.classList.add('expanded');
-                    }
+                groupContent.appendChild(groupItemsUl);
+                groupLi.appendChild(groupContent);
+                list.appendChild(groupLi);
+                
+                // 设置初始显示状态
+                if (!expandedGroups[group.id]) {
+                    groupContent.style.display = 'none';
+                    groupHeader.classList.remove('expanded');
+                } else {
+                    groupContent.style.display = 'block';
+                    groupHeader.classList.add('expanded');
                 }
             });
 
