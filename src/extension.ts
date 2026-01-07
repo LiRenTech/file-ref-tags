@@ -147,9 +147,7 @@ class ReferenceDataManager {
 
 	// 删除标签组
 	deleteGroup(id: string): void {
-		// 删除组和组内所有引用项
-		this.groups = this.groups.filter(g => g.id !== id);
-		// 移除引用项中对已删除组的引用
+		// 移除引用项中对已删除组的引用，将它们改为无分组
 		this.references = this.references.map(ref => {
 			if (ref.groupId === id) {
 				const updatedRef = { ...ref };
@@ -158,6 +156,8 @@ class ReferenceDataManager {
 			}
 			return ref;
 		});
+		// 删除组
+		this.groups = this.groups.filter(g => g.id !== id);
 		this.saveReferences();
 	}
 

@@ -698,11 +698,8 @@ export const TEMPLATE = `<!DOCTYPE html>
                 const deleteGroupBtn = document.createElement('button');
                 deleteGroupBtn.className = 'delete-btn';
                 deleteGroupBtn.textContent = '×';
-                deleteGroupBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    if (confirm('确定要删除这个分组吗？分组内的引用项将变为未分组状态。')) {
-                        vscode.postMessage({ command: 'deleteGroup', id: group.id });
-                    }
+                deleteGroupBtn.onclick = (e) => {
+                    vscode.postMessage({ command: 'deleteGroup', id: group.id });
                 };
 
                 groupActions.appendChild(deleteGroupBtn);
