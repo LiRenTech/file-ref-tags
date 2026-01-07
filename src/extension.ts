@@ -306,16 +306,15 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 		
 		// 首先尝试在记录的文件路径中查找
 		if (reference.targetFilePath) {
-			const foundInRecordedPath = await this._searchAndJumpInFile(reference.targetFilePath, snippet);
-			if (foundInRecordedPath) {
+			const foundFilePath = await this._searchAndJumpInFile(reference.targetFilePath, snippet);
+			if (foundFilePath) {
 				return;
 			}
 		}
 
-		// 如果在记录的文件中没有找到，则使用层级搜索算法
-		// 层级搜索：优先搜索记录中的文件（已尝试），然后搜索文件所在目录，再递归搜索上级目录
+		// 如果在记录的文件中没有找到，则使用层级搜索
 		if (reference.targetFilePath) {
-			const foundInHierarchy = await this._hierarchicalSearchAndJump(reference.targetFilePath, snippet);
+			const foundInHierarchy = await this._hierarchicalSearchAndJump(reference.targetFilePath, snippet, reference.id);
 			if (foundInHierarchy) {
 				return;
 			}
@@ -326,9 +325,9 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	// 在指定文件中搜索代码片段并跳转
-	private async _searchAndJumpInFile(filePath: string, snippet: string): Promise<boolean> {
+	private async _searchAndJumpInFile(filePath: string, snippet: string): Promise<string | null> {
 		if (!snippet) {
-			return false;
+			return null;
 		}
 		
 		try {
@@ -347,28 +346,30 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 				// 确保选中的内容可见
 				await textEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 				
-				return true;
+				return filePath;  // 返回找到的文件路径
 			}
 		} catch (error) {
 			console.error('无法在文件中搜索代码片段:', filePath, error);
 		}
 		
-		return false;
+		return null;
 	}
 	
 	// 层级搜索并在找到后跳转
-	private async _hierarchicalSearchAndJump(originalFilePath: string, snippet: string): Promise<boolean> {
+	private async _hierarchicalSearchAndJump(originalFilePath: string, snippet: string, referenceId: string): Promise<boolean> {
 		// 首先在原始文件所在目录搜索
 		const originalDir = path.dirname(originalFilePath);
-		const originalDirName = path.basename(originalDir);
 		
 		console.log(`在文件所在目录 ${originalDir} 中搜索代码片段: ${snippet}`);
 		
 		// 搜索当前目录下的所有文件
-		const currentDirFiles = await vscode.workspace.findFiles(`${originalDir}/**`, '**/node_modules/**');
+		const currentDirFiles = await vscode.workspace.findFiles(`${originalDir.replace(/\\/g, '/')}/**`, '**/node_modules/**');
 		
 		for (const file of currentDirFiles) {
-			if (await this._searchAndJumpInFile(file.fsPath, snippet)) {
+			const foundFilePath = await this._searchAndJumpInFile(file.fsPath, snippet);
+			if (foundFilePath) {
+				// 更新记录的文件路径
+				this._dataManager.updateReferenceTargetFilePath(referenceId, foundFilePath);
 				return true;
 			}
 		}
@@ -381,10 +382,13 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 			console.log(`在父级目录 ${parentDir} 中搜索代码片段: ${snippet}`);
 			
 			// 搜索当前父目录下的所有文件
-			const parentDirFiles = await vscode.workspace.findFiles(`${parentDir}/**`, '**/node_modules/**');
+			const parentDirFiles = await vscode.workspace.findFiles(`${parentDir.replace(/\\/g, '/')}/**`, '**/node_modules/**');
 			
 			for (const file of parentDirFiles) {
-				if (await this._searchAndJumpInFile(file.fsPath, snippet)) {
+				const foundFilePath = await this._searchAndJumpInFile(file.fsPath, snippet);
+				if (foundFilePath) {
+					// 更新记录的文件路径
+					this._dataManager.updateReferenceTargetFilePath(referenceId, foundFilePath);
 					return true;
 				}
 			}
