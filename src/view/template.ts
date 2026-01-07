@@ -12,18 +12,18 @@ export const TEMPLATE = `<!DOCTYPE html>
             padding: 0;
             background-color: var(--vscode-editor-background, #1e1e1e);
             color: var(--vscode-editor-foreground, #d4d4d4);
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 400;
         }
         .container {
-            padding: 4px 2px;
+            padding: 8px 4px;
             display: flex;
             flex-direction: column;
             height: 100%;
         }
         h1 {
-            font-size: 12px;
-            margin: 0 0 8px 0;
+            font-size: 14px;
+            margin: 0 0 10px 0;
             font-weight: 400;
             color: var(--vscode-editor-foreground, #d4d4d4);
         }
@@ -38,9 +38,9 @@ export const TEMPLATE = `<!DOCTYPE html>
             margin: 0;
         }
         .reference-item {
-            outline: 1px solid var(--vscode-panel-border, #3e3e42);
-            padding: 0 4px;
-            margin: 0;
+            outline: 2px solid var(--vscode-panel-border, #3e3e42);
+            padding: 0 6px;
+            margin: 0 0 6px 0;
             cursor: pointer;
             transition: all 0.2s ease;
             user-select: none;
@@ -48,8 +48,9 @@ export const TEMPLATE = `<!DOCTYPE html>
             justify-content: space-between;
             align-items: center;
             position: relative;
-            line-height: 22px;
+            line-height: 26px;
             background-color: var(--vscode-editor-background, #1e1e1e);
+            border-radius: 4px;
         }
         .reference-item[data-type="file"] {
             background-color: rgba(14, 99, 156, 0.15);
@@ -75,7 +76,7 @@ export const TEMPLATE = `<!DOCTYPE html>
             border-top: 2px solid var(--vscode-input-focusBorder, #0e639c);
         }
         .reference-title {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 400;
             margin: 0;
             white-space: nowrap;
@@ -110,7 +111,7 @@ export const TEMPLATE = `<!DOCTYPE html>
             border: none;
             color: var(--vscode-descriptionForeground, #858585);
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             padding: 1px 5px;
             border-radius: 2px;
         }
@@ -123,7 +124,7 @@ export const TEMPLATE = `<!DOCTYPE html>
             border: none;
             color: var(--vscode-descriptionForeground, #858585);
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             padding: 1px 5px;
             border-radius: 2px;
         }
@@ -234,8 +235,8 @@ export const TEMPLATE = `<!DOCTYPE html>
             background-color: var(--vscode-button-background, #0e639c);
             color: var(--vscode-button-foreground, #ffffff);
             border: none;
-            padding: 4px 8px;
-            font-size: 10px;
+            padding: 6px 8px;
+            font-size: 12px;
             cursor: pointer;
             width: 100%;
         }
