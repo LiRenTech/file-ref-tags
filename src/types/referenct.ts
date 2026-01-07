@@ -8,4 +8,5 @@ export interface ReferenceItem {
   comment?: string;
   createdAt: string;
   updatedAt: string;
+  targetFilePath?: string;
 }
