@@ -45,11 +45,6 @@
         "category": "FileRefTags"
       },
       {
-        "command": "file-ref-tags.addGroup",
-        "title": "添加分组",
-        "category": "FileRefTags"
-      },
-      {
         "command": "file-ref-tags.copyLinkSnippetOnly",
         "title": "复制链接（仅代码片段）",
         "category": "FileRefTags"
@@ -83,13 +78,6 @@
           "group": "9_cutcopypaste"
         }
       ],
-      "view/title": [
-        {
-          "command": "file-ref-tags.addGroup",
-          "when": "view == file-ref-tags.list-view",
-          "group": "navigation"
-        }
-      ],
       "file-ref-tags.submenu": [
         {
           "command": "file-ref-tags.addCurrentFile",
@@ -108,28 +96,24 @@
           "group": "file-ref-tags@4"
         },
         {
-          "command": "file-ref-tags.addGroup",
+          "command": "file-ref-tags.copyLinkSnippetOnly",
           "group": "file-ref-tags@5"
         },
         {
-          "command": "file-ref-tags.copyLinkSnippetOnly",
+          "command": "file-ref-tags.copyLinkFileNameOnly",
           "group": "file-ref-tags@6"
         },
         {
-          "command": "file-ref-tags.copyLinkFileNameOnly",
+          "command": "file-ref-tags.copyLinkFileNameAndSnippet",
           "group": "file-ref-tags@7"
         },
         {
-          "command": "file-ref-tags.copyLinkFileNameAndSnippet",
+          "command": "file-ref-tags.copyLinkParentDirAndSnippet",
           "group": "file-ref-tags@8"
         },
         {
-          "command": "file-ref-tags.copyLinkParentDirAndSnippet",
-          "group": "file-ref-tags@9"
-        },
-        {
           "command": "file-ref-tags.copyLinkWorkspacePathAndSnippet",
-          "group": "file-ref-tags@10"
+          "group": "file-ref-tags@9"
         }
       ]
     },

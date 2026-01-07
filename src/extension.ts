@@ -4,21 +4,16 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TEMPLATE } from './view/template';
-import { ReferenceItem, ReferenceGroup } from './types/referenct';
+import { ReferenceItem } from './types/referenct';
 
 // 数据管理类
 class ReferenceDataManager {
 	private references: ReferenceItem[] = [];
-	private groups: ReferenceGroup[] = []; // 新增：标签组数组
 	private storagePath: string;
 
 	constructor(context: vscode.ExtensionContext) {
 		// 获取存储路径
-		if (context.storageUri) {
-			this.storagePath = path.join(context.storageUri?.fsPath, 'references.json');
-		} else { 
-			this.storagePath = path.join(context.globalStorageUri.fsPath, 'references.json');
-		}
+		this.storagePath = path.join(context.globalStorageUri.fsPath, 'references.json');
 		// 确保存储目录存在
 		fs.mkdirSync(path.dirname(this.storagePath), { recursive: true });
 		// 加载数据
@@ -30,34 +25,18 @@ class ReferenceDataManager {
 		try {
 			if (fs.existsSync(this.storagePath)) {
 				const data = fs.readFileSync(this.storagePath, 'utf8');
-				const parsedData = JSON.parse(data);
-				
-				// 如果解析的数据包含groups字段，则同时加载引用和分组
-				if (Array.isArray(parsedData.references) && Array.isArray(parsedData.groups)) {
-					this.references = parsedData.references;
-					this.groups = parsedData.groups;
-				} else {
-					// 向后兼容：如果数据格式是旧的数组格式
-					this.references = Array.isArray(parsedData) ? parsedData : [];
-					this.groups = [];
-				}
+				this.references = JSON.parse(data);
 			}
 		} catch (error) {
 			console.error('Failed to load references:', error);
 			this.references = [];
-			this.groups = [];
 		}
 	}
 
 	// 保存引用数据
 	private saveReferences(): void {
 		try {
-			// 保存引用和分组数据
-			const dataToSave = {
-				references: this.references,
-				groups: this.groups
-			};
-			fs.writeFileSync(this.storagePath, JSON.stringify(dataToSave, null, 2), 'utf8');
+			fs.writeFileSync(this.storagePath, JSON.stringify(this.references, null, 2), 'utf8');
 		} catch (error) {
 			console.error('Failed to save references:', error);
 		}
@@ -77,28 +56,9 @@ class ReferenceDataManager {
 		return newReference;
 	}
 
-	// 添加标签组
-	addGroup(name: string): ReferenceGroup {
-		const now = new Date().toISOString();
-		const newGroup: ReferenceGroup = {
-			id: `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-			name: name,
-			createdAt: now,
-			updatedAt: now
-		};
-		this.groups.push(newGroup);
-		this.saveReferences();
-		return newGroup;
-	}
-
 	// 获取所有引用项
 	getReferences(): ReferenceItem[] {
 		return [...this.references];
-	}
-
-	// 获取所有标签组
-	getGroups(): ReferenceGroup[] {
-		return [...this.groups];
 	}
 
 	// 更新引用项顺序
@@ -120,44 +80,9 @@ class ReferenceDataManager {
 		this.saveReferences();
 	}
 
-	// 更新分组顺序
-	updateGroupOrder(newOrder: string[]): void {
-		const newGroups: ReferenceGroup[] = [];
-		newOrder.forEach(id => {
-			const group = this.groups.find(g => g.id === id);
-			if (group) {
-				newGroups.push(group);
-			}
-		});
-		// 添加未在新顺序中的分组
-		this.groups.forEach(group => {
-			if (!newOrder.includes(group.id)) {
-				newGroups.push(group);
-			}
-		});
-		this.groups = newGroups;
-		this.saveReferences();
-	}
-
 	// 删除引用项
 	deleteReference(id: string): void {
 		this.references = this.references.filter(r => r.id !== id);
-		this.saveReferences();
-	}
-
-	// 删除标签组
-	deleteGroup(id: string): void {
-		// 移除引用项中对已删除组的引用，将它们改为无分组
-		this.references = this.references.map(ref => {
-			if (ref.groupId === id) {
-				const updatedRef = { ...ref };
-				delete updatedRef.groupId;
-				return updatedRef;
-			}
-			return ref;
-		});
-		// 删除组
-		this.groups = this.groups.filter(g => g.id !== id);
 		this.saveReferences();
 	}
 
@@ -166,30 +91,6 @@ class ReferenceDataManager {
 		const reference = this.references.find(r => r.id === id);
 		if (reference) {
 			reference.title = title;
-			reference.updatedAt = new Date().toISOString();
-			this.saveReferences();
-		}
-	}
-	
-	// 更新引用项目标文件路径
-	updateReferenceTargetFilePath(id: string, targetFilePath: string): void {
-		const reference = this.references.find(r => r.id === id);
-		if (reference) {
-			reference.targetFilePath = targetFilePath;
-			reference.updatedAt = new Date().toISOString();
-			this.saveReferences();
-		}
-	}
-
-	// 更新引用项的标签组
-	updateReferenceGroup(id: string, groupId: string | null): void {
-		const reference = this.references.find(r => r.id === id);
-		if (reference) {
-			if (groupId) {
-				reference.groupId = groupId;
-			} else {
-				delete reference.groupId;
-			}
 			reference.updatedAt = new Date().toISOString();
 			this.saveReferences();
 		}
@@ -238,10 +139,6 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 						this._dataManager.updateOrder(message.order);
 						this._sendReferences();
 						return;
-					case 'updateGroupOrder':
-						this._dataManager.updateGroupOrder(message.order);
-						this._sendReferences();
-						return;
 					case 'deleteReference':
 						this._dataManager.deleteReference(message.id);
 						this._sendReferences();
@@ -254,17 +151,6 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 						return;
 					case 'updateReferenceTitle':
 						this._dataManager.updateReferenceTitle(message.id, message.title);
-						this._sendReferences();
-						return;
-					case 'addGroup':
-						this._addGroup(message.name);
-						return;
-					case 'deleteGroup':
-						this._dataManager.deleteGroup(message.id);
-						this._sendReferences();
-						return;
-					case 'updateReferenceGroup':
-						this._dataManager.updateReferenceGroup(message.id, message.groupId);
 						this._sendReferences();
 						return;
 				}
@@ -306,16 +192,9 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 		if (this._webviewView) {
 			this._webviewView.webview.postMessage({
 				command: 'updateReferences',
-				references: this._dataManager.getReferences(),
-				groups: this._dataManager.getGroups()
+				references: this._dataManager.getReferences()
 			});
 		}
-	}
-
-	// 添加标签组
-	private _addGroup(name: string): void {
-		this._dataManager.addGroup(name);
-		this._sendReferences();
 	}
 
 	// 跳转到引用位置
@@ -359,8 +238,58 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 				case 'global-snippet':
 					// 全局搜索代码片段
 					if (reference.snippet) {
-						// 尝试使用层级搜索算法
-						await this._jumpToGlobalSnippetWithHierarchy(reference);
+						// 使用与添加引用时相同的搜索方式
+						try {
+							console.log('开始搜索代码片段:', reference.snippet);
+							// 先获取当前工作区的所有文件
+							const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 10000);
+							console.log('搜索文件数量:', files.length);
+
+							let matchCount = 0;
+							let matchFile: vscode.Uri | undefined;
+							let matchStartPosition: vscode.Position | undefined;
+							let matchEndPosition: vscode.Position | undefined;
+
+							// 遍历文件，查找包含代码片段的文件
+							for (const file of files) {
+								try {
+									const doc = await vscode.workspace.openTextDocument(file);
+									const text = doc.getText();
+									const index = text.indexOf(reference.snippet);
+									if (index !== -1) {
+										matchCount++;
+										matchFile = file;
+										matchStartPosition = doc.positionAt(index);
+										matchEndPosition = doc.positionAt(index + reference.snippet.length);
+										// 如果超过1个匹配，就可以提前结束
+										if (matchCount > 1) {
+											break;
+										}
+									}
+								} catch (error) {
+									// 忽略无法打开的文件
+									console.error('无法打开文件:', file.fsPath, error);
+									continue;
+								}
+							}
+
+							console.log('匹配数量:', matchCount);
+
+							if (matchCount === 1 && matchFile && matchStartPosition && matchEndPosition) {
+								const textEditor = await vscode.window.showTextDocument(matchFile);
+								const range = new vscode.Range(matchStartPosition, matchEndPosition);
+								await vscode.window.showTextDocument(matchFile, { selection: range });
+								// 确保选中的内容可见
+								await textEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+							} else if (matchCount === 0) {
+								vscode.window.showWarningMessage('未找到匹配的代码片段');
+							} else {
+								vscode.window.showWarningMessage('代码片段已不是全局唯一');
+							}
+						} catch (error) {
+							console.error('Global search failed:', error);
+							vscode.window.showErrorMessage('全局搜索失败');
+						}
 					}
 					break;
 				case 'comment':
@@ -381,6 +310,8 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 	// 显示存储位置
 	private async _showStorageLocation(): Promise<void> {
 		try {
+			// 假设dataManager有一个getStoragePath方法来获取存储路径
+			// 我们需要修改ReferenceDataManager类，添加getStoragePath方法
 			if ('getStoragePath' in this._dataManager) {
 				const storagePath = (this._dataManager as any).getStoragePath();
 				const uri = vscode.Uri.file(storagePath);
@@ -401,175 +332,6 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 	// 生成webview HTML
 	private _getHtmlForWebview(webview: vscode.Webview): string {
 		return TEMPLATE;
-	}
-
-	// 使用层级搜索跳转到全局代码片段
-	private async _jumpToGlobalSnippetWithHierarchy(reference: ReferenceItem): Promise<void> {
-		if (!reference.snippet) {
-			return;
-		}
-
-		const snippet = reference.snippet;
-		
-		// 首先尝试在记录的文件路径中查找
-		if (reference.targetFilePath) {
-			const foundFilePath = await this._searchAndJumpInFile(reference.targetFilePath, snippet);
-			if (foundFilePath) {
-				return;
-			}
-		}
-
-		// 如果在记录的文件中没有找到，则使用层级搜索
-		if (reference.targetFilePath) {
-			const foundInHierarchy = await this._hierarchicalSearchAndJump(reference.targetFilePath, snippet, reference.id);
-			if (foundInHierarchy) {
-				return;
-			}
-		}
-
-		// 如果层级搜索没有找到，则进行全局搜索
-		await this._globalSearchAndJump(reference);
-	}
-
-	// 在指定文件中搜索代码片段并跳转
-	private async _searchAndJumpInFile(filePath: string, snippet: string): Promise<string | null> {
-		if (!snippet) {
-			return null;
-		}
-		
-		try {
-			const uri = vscode.Uri.file(filePath);
-			const doc = await vscode.workspace.openTextDocument(uri);
-			const text = doc.getText();
-			const index = text.indexOf(snippet);
-			
-			if (index !== -1) {
-				const textEditor = await vscode.window.showTextDocument(uri);
-				const startPosition = doc.positionAt(index);
-				const endPosition = doc.positionAt(index + snippet.length);
-				const range = new vscode.Range(startPosition, endPosition);
-				
-				await vscode.window.showTextDocument(uri, { selection: range });
-				// 确保选中的内容可见
-				await textEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-				
-				return filePath;  // 返回找到的文件路径
-			}
-		} catch (error) {
-			console.error('无法在文件中搜索代码片段:', filePath, error);
-		}
-		
-		return null;
-	}
-	
-	// 层级搜索并在找到后跳转
-	private async _hierarchicalSearchAndJump(originalFilePath: string, snippet: string, referenceId: string): Promise<boolean> {
-		// 首先在原始文件所在目录搜索
-		const originalDir = path.dirname(originalFilePath);
-		
-		console.log(`在文件所在目录 ${originalDir} 中搜索代码片段: ${snippet}`);
-		
-		// 搜索当前目录下的所有文件
-		const currentDirFiles = await vscode.workspace.findFiles(`${originalDir.replace(/\\/g, '/')}/**`, '**/node_modules/**');
-		
-		for (const file of currentDirFiles) {
-			const foundFilePath = await this._searchAndJumpInFile(file.fsPath, snippet);
-			if (foundFilePath) {
-				// 更新记录的文件路径
-				this._dataManager.updateReferenceTargetFilePath(referenceId, foundFilePath);
-				return true;
-			}
-		}
-		
-		// 如果在当前目录没找到，向上递归搜索父级目录
-		let parentDir = path.dirname(originalDir);
-		const rootPath = path.parse(originalDir).root; // 获取盘符或根目录
-		
-		while (parentDir !== rootPath && parentDir !== '.') {
-			console.log(`在父级目录 ${parentDir} 中搜索代码片段: ${snippet}`);
-			
-			// 搜索当前父目录下的所有文件
-			const parentDirFiles = await vscode.workspace.findFiles(`${parentDir.replace(/\\/g, '/')}/**`, '**/node_modules/**');
-			
-			for (const file of parentDirFiles) {
-				const foundFilePath = await this._searchAndJumpInFile(file.fsPath, snippet);
-				if (foundFilePath) {
-					// 更新记录的文件路径
-					this._dataManager.updateReferenceTargetFilePath(referenceId, foundFilePath);
-					return true;
-				}
-			}
-			
-			// 继续向上一级目录搜索
-			const nextParentDir = path.dirname(parentDir);
-			if (nextParentDir === parentDir) {
-				// 已经到达根目录
-				break;
-			}
-			parentDir = nextParentDir;
-		}
-		
-		return false;
-	}
-	
-	// 全局搜索并在找到后跳转
-	private async _globalSearchAndJump(reference: ReferenceItem): Promise<void> {
-		if (!reference.snippet) {
-			return;
-		}
-		
-		const snippet = reference.snippet;
-		
-		// 先获取当前工作区的所有文件
-		const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 10000);
-		console.log('全局搜索文件数量:', files.length);
-
-		let matchCount = 0;
-		let matchFile: vscode.Uri | undefined;
-		let matchStartPosition: vscode.Position | undefined;
-		let matchEndPosition: vscode.Position | undefined;
-
-		// 遍历文件，查找包含代码片段的文件
-		for (const file of files) {
-			try {
-				const doc = await vscode.workspace.openTextDocument(file);
-				const text = doc.getText();
-				const index = text.indexOf(snippet);
-				if (index !== -1) {
-					matchCount++;
-					matchFile = file;
-					matchStartPosition = doc.positionAt(index);
-					matchEndPosition = doc.positionAt(index + snippet.length);
-					// 如果超过1个匹配，就可以提前结束
-					if (matchCount > 1) {
-						break;
-					}
-				}
-			} catch (error) {
-				// 忽略无法打开的文件
-				console.error('无法打开文件:', file.fsPath, error);
-				continue;
-			}
-		}
-
-		console.log('匹配数量:', matchCount);
-
-		if (matchCount === 1 && matchFile && matchStartPosition && matchEndPosition) {
-			const textEditor = await vscode.window.showTextDocument(matchFile);
-			const range = new vscode.Range(matchStartPosition, matchEndPosition);
-			await vscode.window.showTextDocument(matchFile, { selection: range });
-			// 确保选中的内容可见
-			await textEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-			
-			// 更新记录的文件路径
-			if (reference.targetFilePath !== matchFile.fsPath) {
-				this._dataManager.updateReferenceTargetFilePath(reference.id, matchFile.fsPath);
-			}
-		} else if (matchCount === 0) {
-			vscode.window.showWarningMessage('未找到匹配的代码片段');
-		} else {
-			vscode.window.showWarningMessage('代码片段已不是全局唯一');
-		}
 	}
 }
 
@@ -645,7 +407,7 @@ export function activate(context: vscode.ExtensionContext) {
 				const matches: vscode.Uri[] = [];
 				for (const folder of workspaceFolders) {
 					// 直接匹配文件名
-					const files = await vscode.workspace.findFiles(`**/${filePath.replace(/\\/g, '/').replace(/\$/g, '\\$')}`, '**/node_modules/**');
+					const files = await vscode.workspace.findFiles(`**/${filePath}`, '**/node_modules/**');
 					matches.push(...files);
 				}
 
@@ -686,7 +448,7 @@ export function activate(context: vscode.ExtensionContext) {
 				const matches: vscode.Uri[] = [];
 				for (const folder of workspaceFolders) {
 					// 直接匹配文件名
-					const files = await vscode.workspace.findFiles(`**/${filePath.replace(/\\/g, '/').replace(/\$/g, '\\$')}`, '**/node_modules/**');
+					const files = await vscode.workspace.findFiles(`**/${filePath}`, '**/node_modules/**');
 					matches.push(...files);
 				}
 
@@ -751,11 +513,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// 全局搜索并跳转到代码片段
 	const jumpToGlobalSnippet = async (snippet: string) => {
-		if (!snippet) {
-			vscode.window.showErrorMessage('代码片段不能为空');
-			return;
-		}
-		
 		try {
 			// 先获取当前工作区的所有文件
 			const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 10000);
@@ -902,24 +659,63 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const document = editor.document;
-		const filePath = document.uri.fsPath;
 		const snippet = editor.document.getText(selection);
 
-		// 截取代码片段作为标题（最多50个字符）
-		const title = snippet.substring(0, 50) + (snippet.length > 50 ? '...' : '');
+		// 全局搜索代码片段
+		try {
+			console.log('开始搜索代码片段:', snippet);
+			// 使用更可靠的方式进行全局搜索
+			// 先获取当前工作区的所有文件
+			const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 10000);
+			console.log('搜索文件数量:', files.length);
 
-		// 直接创建引用项，不进行全局搜索，但记录当前文件路径
-		const newReference = dataManager.addReference({
-			type: 'global-snippet',
-			title: title,
-			snippet: snippet,
-			targetFilePath: filePath  // 记录当前文件路径
-		});
+			let matchCount = 0;
+			let matchFile: vscode.Uri | undefined;
 
-		// 通知webview更新
-		webviewViewProvider.notifyUpdate();
-		vscode.window.showInformationMessage('已添加当前选中的全局唯一片段到面板');
+			// 遍历文件，查找包含代码片段的文件
+			for (const file of files) {
+				try {
+					const doc = await vscode.workspace.openTextDocument(file);
+					const text = doc.getText();
+					if (text.includes(snippet)) {
+						matchCount++;
+						matchFile = file;
+						// 如果超过1个匹配，就可以提前结束
+						if (matchCount > 1) {
+							break;
+						}
+					}
+				} catch (error) {
+					// 忽略无法打开的文件
+					console.error('无法打开文件:', file.fsPath, error);
+					continue;
+				}
+			}
+
+			console.log('匹配数量:', matchCount);
+
+			if (matchCount !== 1) {
+				vscode.window.showErrorMessage('选中的代码片段不是全局唯一的');
+				return;
+			}
+
+			// 截取代码片段作为标题（最多50个字符）
+			const title = snippet.substring(0, 50) + (snippet.length > 50 ? '...' : '');
+
+			// 创建引用项
+			dataManager.addReference({
+				type: 'global-snippet',
+				title: title,
+				snippet: snippet
+			});
+
+			// 通知webview更新
+			webviewViewProvider.notifyUpdate();
+			vscode.window.showInformationMessage('已添加当前选中的全局唯一片段到面板');
+		} catch (error) {
+			console.error('搜索代码片段失败:', error);
+			vscode.window.showErrorMessage('搜索代码片段失败');
+		}
 	});
 
 	context.subscriptions.push(addGlobalUniqueSnippetDisposable);
@@ -952,31 +748,6 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(addCommentDisposable);
-
-	// 注册添加分组命令
-	const addGroupDisposable = vscode.commands.registerCommand('file-ref-tags.addGroup', async () => {
-		// 显示输入框，让用户输入分组名称
-		const groupName = await vscode.window.showInputBox({
-			prompt: '请输入分组名称',
-			placeHolder: '例如：API相关',
-			validateInput: (value) => {
-				if (!value || value.trim().length === 0) {
-					return '分组名称不能为空';
-				}
-				return null;
-			}
-		});
-
-		if (groupName) {
-			// 创建分组
-			dataManager.addGroup(groupName.trim());
-			// 通知webview更新
-			webviewViewProvider.notifyUpdate();
-			vscode.window.showInformationMessage('已添加新分组');
-		}
-	});
-
-	context.subscriptions.push(addGroupDisposable);
 
 	// 辅助函数：生成 vscode:// 链接
 	const generateVscodeLink = (filePath?: string, snippet?: string): string => {
